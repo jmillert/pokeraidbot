@@ -12,15 +12,19 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.transaction.annotation.EnableTransactionManagement;
 import pokeraidbot.BotService;
-import pokeraidbot.domain.*;
-import pokeraidbot.infrastructure.CSVGymDataReader;
-import pokeraidbot.infrastructure.jpa.RaidEntityRepository;
+import pokeraidbot.Utils;
+import pokeraidbot.domain.config.ClockService;
+import pokeraidbot.domain.config.LocaleService;
+import pokeraidbot.domain.gym.GymRepository;
+import pokeraidbot.domain.pokemon.PokemonRaidStrategyService;
+import pokeraidbot.domain.pokemon.PokemonRepository;
+import pokeraidbot.domain.raid.RaidRepository;
+import pokeraidbot.infrastructure.jpa.config.ConfigRepository;
+import pokeraidbot.infrastructure.jpa.raid.RaidEntityRepository;
 
 import javax.security.auth.login.LoginException;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.time.LocalTime;
 
 @SpringBootApplication
 @Configuration
@@ -46,32 +50,24 @@ public class BotServerMain {
 
     @Bean
     public ClockService getClockService() {
-        return new ClockService();
+        final ClockService clockService = new ClockService();
+        // If you want to test, and it's currently in the "dead time" where raids can't be created, set time manually like this
+//        clockService.setMockTime(LocalTime.of(10, 30));
+        Utils.setClockService(clockService);
+        return clockService;
     }
 
     @Bean
     public BotService getBotService(LocaleService localeService, GymRepository gymRepository, RaidRepository raidRepository,
                                     PokemonRepository pokemonRepository, PokemonRaidStrategyService raidInfoService,
-                                    ConfigRepository configRepository) {
+                                    ConfigRepository configRepository, ClockService clockService) {
         return new BotService(localeService, gymRepository, raidRepository, pokemonRepository, raidInfoService,
-                configRepository, ownerId, token);
+                configRepository, clockService, ownerId, token);
     }
 
     @Bean
     public GymRepository getGymRepository(LocaleService localeService, ConfigRepository configRepository) {
-        Map<String, Config> configMap = configRepository.getAllConfig();
-        Map<String, Set<Gym>> gymsPerRegion = new HashMap<>();
-        System.out.println("Config has following servers: " + configMap.keySet());
-        for (String server : configMap.keySet()) {
-            final Config config = configRepository.getConfigForServer(server);
-            final Set<Gym> existingGyms = gymsPerRegion.get(config.region);
-            if (existingGyms == null) {
-                final Set<Gym> gymsInRegion = new CSVGymDataReader("/gyms_" + config.region + ".csv").readAll();
-                gymsPerRegion.put(config.region, gymsInRegion);
-                System.out.println("Loaded " + gymsInRegion.size() + " gyms for region " + config.region + ".");
-            }
-        }
-        return new GymRepository(gymsPerRegion, localeService);
+        return new GymRepository(configRepository, localeService);
     }
 
     @Bean
@@ -89,17 +85,5 @@ public class BotServerMain {
     @Bean
     public PokemonRaidStrategyService getRaidInfoService(PokemonRepository pokemonRepository) {
         return new PokemonRaidStrategyService(pokemonRepository);
-    }
-
-    @Bean
-    public ConfigRepository getConfigRepository() {
-        final HashMap<String, Config> configurationMap = new HashMap<>();
-        configurationMap.put("zhorhn tests stuff", new Config("uppsala"));
-        configurationMap.put("pokeraidbot_stage", new Config("stockholm"));
-        configurationMap.put("pokeraidbot_test", new Config("luleå"));
-        configurationMap.put("pokémon luleå", new Config("luleå"));
-        configurationMap.put("test pokemongo ängelholm", new Config("ängelholm"));
-        configurationMap.put("raid-test-nkpg", new Config("norrköping"));
-        return new ConfigRepository(configurationMap);
     }
 }

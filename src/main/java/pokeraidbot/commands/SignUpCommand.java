@@ -1,15 +1,16 @@
 package pokeraidbot.commands;
 
 import com.jagrosh.jdautilities.commandclient.CommandEvent;
+import com.jagrosh.jdautilities.commandclient.CommandListener;
+import net.dv8tion.jda.core.entities.User;
 import pokeraidbot.Utils;
-import pokeraidbot.domain.*;
-import pokeraidbot.domain.errors.UserMessedUpException;
+import pokeraidbot.domain.config.LocaleService;
+import pokeraidbot.domain.gym.GymRepository;
+import pokeraidbot.domain.raid.RaidRepository;
+import pokeraidbot.infrastructure.jpa.config.Config;
+import pokeraidbot.infrastructure.jpa.config.ConfigRepository;
 
-import java.time.LocalTime;
 import java.util.Locale;
-
-import static pokeraidbot.Utils.assertEtaNotAfterRaidEnd;
-import static pokeraidbot.Utils.assertGivenTimeNotBeforeNow;
 
 /**
  * !raid add [number of people] [due time (HH:MM)] [Pokestop name]
@@ -17,61 +18,25 @@ import static pokeraidbot.Utils.assertGivenTimeNotBeforeNow;
 public class SignUpCommand extends ConfigAwareCommand {
     private final GymRepository gymRepository;
     private final RaidRepository raidRepository;
-    private static final int highLimitForSignUps = 20;
     private final LocaleService localeService;
 
     public SignUpCommand(GymRepository gymRepository, RaidRepository raidRepository, LocaleService localeService,
-                         ConfigRepository configRepository) {
-        super(configRepository);
+                         ConfigRepository configRepository, CommandListener commandListener) {
+        super(configRepository, commandListener);
         this.localeService = localeService;
         this.name = "add";
         this.help = localeService.getMessageFor(LocaleService.SIGNUP_HELP, LocaleService.DEFAULT);
         this.gymRepository = gymRepository;
         this.raidRepository = raidRepository;
+        this.aliases = new String[]{"signup"};
     }
 
     @Override
     protected void executeWithConfig(CommandEvent commandEvent, Config config) {
-        try {
-            final String userName = commandEvent.getAuthor().getName();
-            final Locale localeForUser = localeService.getLocaleForUser(userName);
-            final String[] args = commandEvent.getArgs().split(" ");
-            String people = args[0];
-            Integer numberOfPeople;
-            try {
-                numberOfPeople = new Integer(people);
-                if (numberOfPeople < 1 || numberOfPeople > highLimitForSignUps) {
-                    throw new RuntimeException();
-                }
-            } catch (RuntimeException e) {
-                throw new UserMessedUpException(userName,
-                        localeService.getMessageFor(LocaleService.ERROR_PARSE_PLAYERS, localeForUser,
-                                people, String.valueOf(highLimitForSignUps)));
-            }
-
-            String timeString = args[1];
-
-            StringBuilder gymNameBuilder = new StringBuilder();
-            for (int i = 2; i < args.length; i++) {
-                gymNameBuilder.append(args[i]).append(" ");
-            }
-            String gymName = gymNameBuilder.toString().trim();
-            final Gym gym = gymRepository.search(userName, gymName, config.region);
-            final Raid raid = raidRepository.getRaid(gym, config.region);
-
-            LocalTime eta = LocalTime.parse(timeString, Utils.dateTimeParseFormatter);
-
-            assertEtaNotAfterRaidEnd(userName, raid, eta, localeService);
-            assertGivenTimeNotBeforeNow(userName, eta, localeService);
-
-            raid.signUp(userName, numberOfPeople, eta, raidRepository);
-            final String currentSignupText = localeService.getMessageFor(LocaleService.CURRENT_SIGNUPS, localeForUser);
-            final String signUpText = raid.getSignUps().size() > 1 ? currentSignupText + "\n" + raid.getSignUps() : "";
-            commandEvent.reply(localeService.getMessageFor(LocaleService.SIGNUPS, localeForUser, userName,
-                    gym.getName(), signUpText));
-        } catch (Throwable t) {
-            commandEvent.reply(t.getMessage());
-        }
+        final User user = commandEvent.getAuthor();
+        final Locale localeForUser = localeService.getLocaleForUser(user);
+        final String[] args = Utils.prepareArguments(commandEvent);
+        final String returnMessage = raidRepository.executeSignUpCommand(config, user, localeForUser, args, help);
+        ConfigAwareCommand.replyBasedOnConfigAndRemoveAfter(config, commandEvent, returnMessage, 15);
     }
-
 }
