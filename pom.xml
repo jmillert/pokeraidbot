@@ -88,6 +88,12 @@
             <version>20160810</version>
             <scope>compile</scope>
         </dependency>
+        <!-- OCR lib -->
+        <dependency>
+            <groupId>net.sourceforge.tess4j</groupId>
+            <artifactId>tess4j</artifactId>
+            <version>3.4.1</version>
+        </dependency>
         <!-- Fuzzy search lib -->
         <dependency>
             <groupId>me.xdrop</groupId>
