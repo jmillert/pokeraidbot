@@ -1,25 +1,49 @@
 package pokeraidbot.commands;
 
 import com.jagrosh.jdautilities.commandclient.CommandEvent;
-import pokeraidbot.domain.*;
+import com.jagrosh.jdautilities.commandclient.CommandListener;
+import net.dv8tion.jda.core.EmbedBuilder;
+import net.dv8tion.jda.core.entities.MessageEmbed;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import pokeraidbot.BotService;
+import pokeraidbot.Utils;
+import pokeraidbot.domain.config.LocaleService;
+import pokeraidbot.domain.gym.Gym;
+import pokeraidbot.domain.gym.GymRepository;
+import pokeraidbot.domain.pokemon.Pokemon;
+import pokeraidbot.domain.pokemon.PokemonRepository;
+import pokeraidbot.domain.raid.Raid;
+import pokeraidbot.domain.raid.RaidRepository;
+import pokeraidbot.domain.raid.signup.SignUp;
+import pokeraidbot.infrastructure.jpa.config.Config;
+import pokeraidbot.infrastructure.jpa.config.ConfigRepository;
 
 import java.util.Locale;
 import java.util.Set;
 
-import static pokeraidbot.Utils.printTime;
+import static pokeraidbot.Utils.getNamesOfThoseWithSignUps;
+import static pokeraidbot.Utils.printTimeIfSameDay;
 
 /**
  * !raid status [Pokestop name]
  */
 public class RaidStatusCommand extends ConfigAwareCommand {
+    private static final transient Logger LOGGER = LoggerFactory.getLogger(RaidStatusCommand.class);
     private final GymRepository gymRepository;
     private final RaidRepository raidRepository;
     private final LocaleService localeService;
+    private final BotService botService;
+    private final PokemonRepository pokemonRepository;
 
     public RaidStatusCommand(GymRepository gymRepository, RaidRepository raidRepository, LocaleService localeService,
-                             ConfigRepository configRepository) {
-        super(configRepository);
+                             ConfigRepository configRepository, BotService botService, CommandListener commandListener,
+                             PokemonRepository pokemonRepository) {
+        super(configRepository, commandListener);
         this.localeService = localeService;
+        this.botService = botService;
+        this.pokemonRepository = pokemonRepository;
         this.name = "status";
         this.help = localeService.getMessageFor(LocaleService.RAIDSTATUS_HELP, LocaleService.DEFAULT);
 
@@ -29,23 +53,45 @@ public class RaidStatusCommand extends ConfigAwareCommand {
 
     @Override
     protected void executeWithConfig(CommandEvent commandEvent, Config config) {
-        try {
-            String gymName = commandEvent.getArgs();
-            final String userName = commandEvent.getAuthor().getName();
-            final Gym gym = gymRepository.search(userName, gymName, config.region);
-            final Raid raid = raidRepository.getRaid(gym, config.region);
-            final Set<SignUp> signUps = raid.getSignUps();
-            final int numberOfPeople = raid.getNumberOfPeopleSignedUp();
+        String gymName = commandEvent.getArgs();
+        final String userName = commandEvent.getAuthor().getName();
+        final Gym gym = gymRepository.search(userName, gymName, config.getRegion());
+        final Raid raid = raidRepository.getActiveRaidOrFallbackToExRaid(gym, config.getRegion());
+        final Set<SignUp> signUps = raid.getSignUps();
+        final int numberOfPeople = raid.getNumberOfPeopleSignedUp();
 
-            final Locale localeForUser = localeService.getLocaleForUser(userName);
-            commandEvent.reply("**" +
-                    localeService.getMessageFor(LocaleService.RAIDSTATUS, localeForUser, gym.getName()) + "**\n" +
-                    "Pokemon: " + raid.getPokemon() + "\n" +
-                    localeService.getMessageFor(LocaleService.ENDS_AT, localeForUser, printTime(raid.getEndOfRaid())) + "\n" +
-                    numberOfPeople + " " + localeService.getMessageFor(LocaleService.SIGNED_UP, localeForUser) + "." +
-                    (signUps.size() > 0 ? "\n" + signUps : ""));
-        } catch (Throwable e) {
-            commandEvent.reply(e.getMessage());
-        }
+        final Locale localeForUser = localeService.getLocaleForUser(userName);
+        EmbedBuilder embedBuilder = new EmbedBuilder();
+        embedBuilder.setAuthor(null, null, null);
+        final Pokemon pokemon = raid.getPokemon();
+        embedBuilder.setTitle(localeService.getMessageFor(LocaleService.RAIDSTATUS, localeForUser, gym.getName()),
+                Utils.getNonStaticMapUrl(gym));
+        StringBuilder sb = new StringBuilder();
+        final String activeText = localeService.getMessageFor(LocaleService.ACTIVE, localeForUser);
+        final String startGroupText = localeService.getMessageFor(LocaleService.START_GROUP, localeForUser);
+        final String findYourWayText = localeService.getMessageFor(LocaleService.FIND_YOUR_WAY, localeForUser);
+        final String raidBossText = localeService.getMessageFor(LocaleService.RAID_BOSS, localeForUser);
+//        final String hintsText = localeService.getMessageFor(LocaleService.FOR_HINTS, localeForUser);
+        final Set<String> signUpNames = getNamesOfThoseWithSignUps(raid.getSignUps(), true);
+        final String allSignUpNames = StringUtils.join(signUpNames, ", ");
+
+        sb.append("**").append(activeText).append(":** ")
+                .append(printTimeIfSameDay(raid.getEndOfRaid().minusHours(1)))
+                .append("-").append(printTimeIfSameDay(raid.getEndOfRaid()))
+                .append("\t**").append(numberOfPeople).append(" ")
+                .append(localeService.getMessageFor(LocaleService.SIGNED_UP, localeForUser)).append("**")
+                .append(signUps.size() > 0 ? ":\n" + allSignUpNames : "").append("\n").append(startGroupText)
+                .append(":\n*!raid group ")
+                .append(printTimeIfSameDay(raid.getEndOfRaid().minusMinutes(15))).append(" ")
+                .append(gymName).append("*\n")
+                .append(raidBossText).append(" **").append(pokemon).append("** - ") //.append(hintsText)
+                .append("*!raid vs ").append(pokemon.getName()).append("*");
+                // todo: i18n
+        embedBuilder.setFooter(findYourWayText + " klicka på meddelandetitel för Google Maps.",
+                Utils.getPokemonIcon(pokemon));
+        embedBuilder.setDescription(sb.toString());
+        final MessageEmbed messageEmbed = embedBuilder.build();
+
+        commandEvent.reply(messageEmbed);
     }
 }
