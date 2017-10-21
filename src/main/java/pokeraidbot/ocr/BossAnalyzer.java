@@ -59,12 +59,7 @@ public class BossAnalyzer {
                 builder.withCountdown(countdownMatcher.group(0));
             }
 
-            for (int j =0 ; j<12; j++ ) {
-                instance.setPageSegMode(j);
-                //instance.setLanguage("Lato");
-                ocr = instance.doOCR(filterBlackAndWhite(image, 2, 0), getRectangle(RectangleType.BOSS_NAME, image.getWidth(), image.getHeight()));
-                System.out.println("OCR(" + j + "): " + ocr);
-            }
+            ocr = instance.doOCR(filterBlackAndWhite(image, 2, 0), getRectangle(RectangleType.BOSS_NAME, image.getWidth(), image.getHeight()));
             builder.withPokemon(cleanUpPokemon(ocr));
 
             return builder.build();
