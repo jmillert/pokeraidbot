@@ -24,15 +24,24 @@ public class BossAnalyzer {
 
     public static OCRAnswer analyzeImage(String filePath) {
         File imageFile = new File(filePath);
+        try {
+            return analyzeImage(ImageIO.read(imageFile), imageFile.getName());
+        } catch (IOException e) {
+            logger.warn("Unable to get OCR result from image" ,e);
+            throw  new RuntimeException("Error reading OCR data");
+        }
+    }
+
+    public static OCRAnswer analyzeImage(BufferedImage inImage, String id) {
         ITesseract instance = new Tesseract();
         instance.setLanguage("eng+swe");
 
         OCRAnswer.OCRAnswerBuilder builder = anOCRAnswer();
-        builder.withType(OCRAnswer.TYPE.BOSS);
-        builder.withSource(imageFile.getName());
+        builder.withType(OCRAnswer.Type.BOSS);
+        builder.withSource(id);
 
         try {
-            BufferedImage image = new MarvinImage(ImageIO.read(imageFile)).getBufferedImageNoAlpha();
+            BufferedImage image = new MarvinImage(inImage).getBufferedImageNoAlpha();
             String ocr;
 
             instance.setPageSegMode(6);

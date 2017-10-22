@@ -1,19 +1,19 @@
 package pokeraidbot.ocr;
 
 public class OCRAnswer {
-    String time;
-    String countdown;
-    String gymName;
-    String pokemon;
-    TYPE type;
-    String source;
+    private String time;
+    private String countdown;
+    private String gymName;
+    private String pokemon;
+    private Type type;
+    private String source;
 
     public static final class OCRAnswerBuilder {
         String time;
         String countdown;
         String gymName;
         String pokemon;
-        TYPE type;
+        Type type;
         String source;
 
         private OCRAnswerBuilder() {
@@ -43,7 +43,7 @@ public class OCRAnswer {
             return this;
         }
 
-        public OCRAnswerBuilder withType(TYPE type) {
+        public OCRAnswerBuilder withType(Type type) {
             this.type = type;
             return this;
         }
@@ -70,7 +70,7 @@ public class OCRAnswer {
             }
 
             if(type == null ||
-                    (TYPE.BOSS.equals(type) && time == null || countdown == null || gymName == null)) {
+                    (Type.BOSS.equals(type) && time == null || countdown == null || gymName == null)) {
                 throw new IllegalStateException();
             }
             OCRAnswer oCRAnswer = new OCRAnswer();
@@ -84,9 +84,36 @@ public class OCRAnswer {
         }
     }
 
-    public enum TYPE {
+    public enum Type {
         BOSS,
         EGG
+    }
+
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+
+        OCRAnswer ocrAnswer = (OCRAnswer) o;
+
+        if (time != null ? !time.equals(ocrAnswer.time) : ocrAnswer.time != null) return false;
+        if (countdown != null ? !countdown.equals(ocrAnswer.countdown) : ocrAnswer.countdown != null) return false;
+        if (gymName != null ? !gymName.equals(ocrAnswer.gymName) : ocrAnswer.gymName != null) return false;
+        if (pokemon != null ? !pokemon.equals(ocrAnswer.pokemon) : ocrAnswer.pokemon != null) return false;
+        if (type != ocrAnswer.type) return false;
+        return source != null ? source.equals(ocrAnswer.source) : ocrAnswer.source == null;
+    }
+
+    @Override
+    public int hashCode() {
+        int result = time != null ? time.hashCode() : 0;
+        result = 31 * result + (countdown != null ? countdown.hashCode() : 0);
+        result = 31 * result + (gymName != null ? gymName.hashCode() : 0);
+        result = 31 * result + (pokemon != null ? pokemon.hashCode() : 0);
+        result = 31 * result + (type != null ? type.hashCode() : 0);
+        result = 31 * result + (source != null ? source.hashCode() : 0);
+        return result;
     }
 
     @Override
@@ -95,7 +122,7 @@ public class OCRAnswer {
                 "Time:   " + time + '\n' +
                 "Count:  " + countdown + '\n' +
                 "Gym:    " + gymName + '\n' +
-                (type == TYPE.BOSS ?"Pokemon " + pokemon + '\n' : "") +
+                (type == Type.BOSS ?"Pokemon " + pokemon + '\n' : "") +
                 "Type:   " + type;
     }
 
