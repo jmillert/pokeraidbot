@@ -8,6 +8,31 @@ public class OCRAnswer {
     private Type type;
     private String source;
 
+
+    public String getTime() {
+        return time;
+    }
+
+    public String getCountdown() {
+        return countdown;
+    }
+
+    public String getGymName() {
+        return gymName;
+    }
+
+    public String getPokemon() {
+        return pokemon;
+    }
+
+    public Type getType() {
+        return type;
+    }
+
+    public String getSource() {
+        return source;
+    }
+
     public static final class OCRAnswerBuilder {
         String time;
         String countdown;

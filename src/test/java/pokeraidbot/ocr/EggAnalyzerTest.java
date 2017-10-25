@@ -1,6 +1,7 @@
 package pokeraidbot.ocr;
 
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import java.text.MessageFormat;
@@ -25,6 +26,7 @@ public class EggAnalyzerTest {
 
     }
 
+    @Ignore
     @Test
     public void crackImage() throws Exception {
         String fileName = "img-ocr/eggs/image ({0}).png";

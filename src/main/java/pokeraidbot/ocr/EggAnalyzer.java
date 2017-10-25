@@ -44,9 +44,9 @@ public class EggAnalyzer {
             BufferedImage image = new MarvinImage(inImage).getBufferedImageNoAlpha();
             String ocr;
 
-            instance.setPageSegMode(7);
+            instance.setPageSegMode(6);
             Pattern timePattern = Pattern.compile("((\\d|O)(\\d|O)(:|I)(\\d|O)(\\d|O))");
-            ocr = instance.doOCR(blur(filterBlackAndWhite(image, 100,25 ), 1),
+            ocr = instance.doOCR(blur(filterBlackAndWhite(image, 25,25 ), 1),
                     getRectangle(RectangleType.EGG_SYSTEM_TIME, image.getWidth(), image.getHeight()));
             Matcher timeMatcher = timePattern.matcher(cleanUpTime(ocr));
             if (!timeMatcher.find()) {

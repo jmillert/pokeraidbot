@@ -94,6 +94,13 @@
             <artifactId>tess4j</artifactId>
             <version>3.4.1</version>
         </dependency>
+        <dependency>
+            <groupId>org.marvinproject</groupId>
+            <artifactId>marvin</artifactId>
+            <version>1.0</version>
+            <scope>system</scope>
+            <systemPath>${basedir}/lib/marvin_1.5.5.jar</systemPath>
+        </dependency>
         <!-- Fuzzy search lib -->
         <dependency>
             <groupId>me.xdrop</groupId>
@@ -104,7 +111,7 @@
         <dependency>
             <groupId>com.h2database</groupId>
             <artifactId>h2</artifactId>
-            <scope>test</scope>
+            <scope>compile</scope>
         </dependency>
         <dependency>
             <groupId>junit</groupId>
