@@ -50,7 +50,7 @@ public class ImagePostListener implements EventListener {
                                 String[] countdown = ocrAnswer.getCountdown().split(":");
                                 Duration toStart = Duration.parse(MessageFormat.format("PT{0}H{1}M", countdown[0], countdown[1], countdown[2]));
                                 LocalTime end = time.plus(toStart).plusHours(1L).plusMinutes(1L);
-                                String template = "!raid new [Some pokemon] %2d:%2d %s";
+                                String template = "!raid new [Some pokemon] %02d:%02d %s";
                                 String result = String.format(template, end.getHour(), end.getMinute(), ocrAnswer.getGymName());
                                 messageBuilder.append("\n");
                                 messageBuilder.append(result);
