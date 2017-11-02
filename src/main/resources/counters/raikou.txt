@@ -1,4 +1,11 @@
 Supreme Counters
+Rhydon
+
+Rhydon
+Quick Move	Charge Move
+Mud Slap
+Earthquake
+Stone Edge
 Golem
 
 Golem
@@ -7,13 +14,13 @@ Mud Slap
 Mud Shot
 Rock Throw
 Earthquake
-Rhydon
-
-Rhydon
-Quick Move	Charge Move
-Mud Slap
-Earthquake
 Good Counters
+Donphan
+
+Donphan
+Quick Move	Charge Move
+Counter
+Earthquake
 Mewtwo
 
 Mewtwo
@@ -22,12 +29,6 @@ Confusion
 Psycho Cut
 Psychic
 Shadow Ball
-Donphan
-
-Donphan
-Quick Move	Charge Move
-Counter
-Earthquake
 Dragonite
 
 Dragonite
@@ -36,16 +37,9 @@ Dragon Tail
 Dragon Breath
 Outrage
 Dragon Claw
-Exeggutor
+Tyranitar
 
-Exeggutor
+Tyranitar
 Quick Move	Charge Move
-Confusion
-Extrasensory
-Solar Beam
-Nidoking
-
-Nidoking
-Quick Move	Charge Move
-Fury Cutter
-Earthquake
+Bite
+Stone Edge

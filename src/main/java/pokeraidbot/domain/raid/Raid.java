@@ -106,11 +106,11 @@ public class Raid {
             signUp = new SignUp(user.getName(), howManyPeople, arrivalTime);
             signUps.put(user.getName(), signUp);
         }
-        repository.addSignUp(user.getName(), this, signUp);
+        repository.addSignUp(user, this, signUp);
     }
 
     public Set<SignUp> getSignUps() {
-        return Collections.unmodifiableSet(new HashSet<>(signUps.values()));
+        return Collections.unmodifiableSet(new LinkedHashSet<>(signUps.values()));
     }
 
     public int getNumberOfPeopleSignedUp() {
@@ -119,7 +119,9 @@ public class Raid {
 
     public SignUp remove(String userName, RaidRepository raidRepository) {
         final SignUp removed = signUps.remove(userName);
-        raidRepository.removeSignUp(userName, this, removed);
+        if (removed != null) {
+            raidRepository.removeSignUp(userName, this, removed);
+        }
         return removed;
     }
 
@@ -143,5 +145,29 @@ public class Raid {
 
     public Set<SignUp> getSignUpsAt(LocalTime localTime) {
         return signUps.values().stream().filter(s -> s.getArrivalTime().equals(localTime)).collect(Collectors.toSet());
+    }
+
+    public String getNextEta(LocaleService localeService, Locale locale, LocalTime now) {
+        if (signUps.size() == 0) {
+            return "";
+        } else {
+            StringBuilder sb = new StringBuilder();
+            final LocalTime endTime = endOfRaid.toLocalTime();
+            LocalTime nextEta = endTime;
+            for (SignUp signUp : signUps.values()) {
+                final LocalTime arrivalTime = signUp.getArrivalTime();
+                if (arrivalTime.isAfter(now) && arrivalTime.isBefore(nextEta)) {
+                    nextEta = arrivalTime;
+                }
+            }
+            // If we have an actual ETA that is not just the raid ending, return it.
+            if (!nextEta.equals(endTime)) {
+                sb.append(", ").append(localeService.getMessageFor(LocaleService.NEXT_ETA,
+                        locale, Utils.printTime(nextEta)));
+                return sb.toString();
+            } else {
+                return "";
+            }
+        }
     }
 }

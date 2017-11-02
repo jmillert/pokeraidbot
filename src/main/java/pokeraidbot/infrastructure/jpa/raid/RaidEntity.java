@@ -9,6 +9,7 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 @Entity
 @Table(indexes = {@Index(name = "id", columnList = "id"), @Index(name = "region", columnList = "region"),
@@ -29,8 +30,8 @@ public class RaidEntity implements Serializable {
     @Basic(optional = false)
     @Column(nullable = false)
     private String creator;
-    @ElementCollection(fetch = FetchType.EAGER)
-//    @CollectionTable(uniqueConstraints = @UniqueConstraint(columnNames = {"responsible"}))
+    @OneToMany(fetch = FetchType.EAGER, orphanRemoval = true, cascade = CascadeType.ALL)
+    @JoinColumn(name="raid", referencedColumnName="id")
     private Set<RaidEntitySignUp> signUps = new HashSet<>();
     @Basic(optional = false)
     @Column(nullable = false)

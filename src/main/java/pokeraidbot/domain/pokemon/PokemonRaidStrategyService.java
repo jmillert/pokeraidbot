@@ -1,5 +1,8 @@
 package pokeraidbot.domain.pokemon;
 
+import org.apache.commons.lang3.Validate;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pokeraidbot.domain.raid.RaidBossCounters;
 import pokeraidbot.infrastructure.CounterTextFileParser;
 
@@ -7,6 +10,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 public class PokemonRaidStrategyService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PokemonRaidStrategyService.class);
+
     private Map<String, RaidBossCounters> counters = new HashMap<>();
     private Map<String, String> maxCp = new HashMap<>();
     private static String[] raidBosses = {
@@ -41,13 +46,17 @@ public class PokemonRaidStrategyService {
             try {
                 final CounterTextFileParser parser = new CounterTextFileParser("/counters", raidBossName, pokemonRepository);
                 final Pokemon raidBoss = pokemonRepository.getByName(raidBossName);
+                if (raidBoss == null) {
+                    LOGGER.error("Could not find raidBoss in pokemon repository: " + raidBossName);
+                    System.exit(-1);
+                }
                 final RaidBossCounters raidBossCounters = new RaidBossCounters(raidBoss, parser.getBestCounters(), parser.getGoodCounters());
                 counters.put(raidBossName.toUpperCase(), raidBossCounters);
             } catch (RuntimeException e) {
                 // No file for this boss, skip it
             }
         }
-        System.out.println("Parsed " + counters.size() + " raid boss counters.");
+        LOGGER.info("Parsed " + counters.size() + " raid boss counters.");
 
         maxCp.put("BAYLEEF", "740");
 
@@ -111,10 +120,11 @@ public class PokemonRaidStrategyService {
 
         maxCp.put("Mewtwo".toUpperCase(), "2275");
 
-        System.out.println("Configured " + maxCp.size() + " raid boss max CP entries.");
+        LOGGER.info("Configured " + maxCp.size() + " raid boss max CP entries.");
     }
 
     public RaidBossCounters getCounters(Pokemon pokemon) {
+        Validate.notNull(pokemon, "Input pokemon cannot be null!");
         final RaidBossCounters counters = this.counters.get(pokemon.getName().toUpperCase());
         return counters;
     }

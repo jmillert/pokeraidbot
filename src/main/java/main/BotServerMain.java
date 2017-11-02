@@ -19,12 +19,19 @@ import pokeraidbot.domain.gym.GymRepository;
 import pokeraidbot.domain.pokemon.PokemonRaidStrategyService;
 import pokeraidbot.domain.pokemon.PokemonRepository;
 import pokeraidbot.domain.raid.RaidRepository;
-import pokeraidbot.infrastructure.jpa.config.ConfigRepository;
+import pokeraidbot.domain.tracking.TrackingCommandListener;
+import pokeraidbot.domain.tracking.TrackingCommandListenerBean;
+import pokeraidbot.infrastructure.jpa.config.ServerConfigRepository;
+import pokeraidbot.infrastructure.jpa.config.UserConfigRepository;
 import pokeraidbot.infrastructure.jpa.raid.RaidEntityRepository;
 
 import javax.security.auth.login.LoginException;
 import java.io.IOException;
 import java.time.LocalTime;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 @SpringBootApplication
 @Configuration
@@ -44,30 +51,49 @@ public class BotServerMain {
     }
 
     @Bean
-    public LocaleService getLocaleService() {
-        return new LocaleService();
+    public LocaleService getLocaleService(UserConfigRepository userConfigRepository, @Value("${locale:sv}")String locale) {
+        return new LocaleService(locale, userConfigRepository);
     }
 
     @Bean
     public ClockService getClockService() {
         final ClockService clockService = new ClockService();
         // If you want to test, and it's currently in the "dead time" where raids can't be created, set time manually like this
-//        clockService.setMockTime(LocalTime.of(10, 30));
+//        clockService.setMockTime(LocalTime.of(9, 0));
         Utils.setClockService(clockService);
         return clockService;
     }
 
     @Bean
-    public BotService getBotService(LocaleService localeService, GymRepository gymRepository, RaidRepository raidRepository,
-                                    PokemonRepository pokemonRepository, PokemonRaidStrategyService raidInfoService,
-                                    ConfigRepository configRepository, ClockService clockService) {
-        return new BotService(localeService, gymRepository, raidRepository, pokemonRepository, raidInfoService,
-                configRepository, clockService, ownerId, token);
+    public TrackingCommandListener getTrackingCommandListener(ServerConfigRepository serverConfigRepository,
+                                                              LocaleService localeService,
+                                                              UserConfigRepository userConfigRepository,
+                                                              PokemonRepository pokemonRepository) {
+        return new TrackingCommandListenerBean(serverConfigRepository, localeService, userConfigRepository,
+                pokemonRepository);
     }
 
     @Bean
-    public GymRepository getGymRepository(LocaleService localeService, ConfigRepository configRepository) {
-        return new GymRepository(configRepository, localeService);
+    public BotService getBotService(LocaleService localeService, GymRepository gymRepository, RaidRepository raidRepository,
+                                    PokemonRepository pokemonRepository, PokemonRaidStrategyService raidInfoService,
+                                    ServerConfigRepository serverConfigRepository,
+                                    UserConfigRepository userConfigRepository, ClockService clockService,
+                                    TrackingCommandListener trackingCommandListener, ExecutorService executorService) {
+        return new BotService(localeService, gymRepository, raidRepository, pokemonRepository, raidInfoService,
+                serverConfigRepository, userConfigRepository, executorService, clockService, ownerId, token,
+                trackingCommandListener);
+    }
+
+    @Bean
+    public ExecutorService getExecutorService() {
+        return new ThreadPoolExecutor(100, Integer.MAX_VALUE,
+                65L, TimeUnit.SECONDS,
+                new SynchronousQueue<>());
+    }
+
+    @Bean
+    public GymRepository getGymRepository(LocaleService localeService, ServerConfigRepository serverConfigRepository) {
+        return new GymRepository(serverConfigRepository, localeService);
     }
 
     @Bean

@@ -4,12 +4,12 @@ See [Changelog](CHANGELOG.md).
 
 Needs testing:
 
-* Handling of groups, moving signups, removing signups etc.
+* ConcurrentModificationException when removing signups from raid when raid group expires -
+create test case for this scenario
 
 Being developed:
 
-* Catch +1 (time) (gym) commands on the fly in chat and turn it into signups
-* Read Pokemon go screenshot to create raid automatically
+-
 
 Discussion:
 
@@ -17,16 +17,20 @@ Discussion:
 
 Experiment with:
 
-* Can we listen for +(number) (time) (gym) to signup using that?
+* Present !raid overview as a table
+* Read Pokemon go screenshot to create raid automatically (Swepocks)
 * Ability to create channels on the fly to put certain raids in
+* Can we create a map with a certain pokestop as centre and plot all raids in that area around it?
 
 Fix issue:
 
+* Fix release tag for 1.0.0
+* Raid group sometimes gives a bad number for individual user signing up. Happens when the first person in the list
+signsup and then unsigns. Resets sometimes when somebody adds themselves to the list.
+* Can signup at raid group end time via raid group emote pressing. Seems bad.
+* Raid ex raid group - need to accept date and time, right now gives error
 * Better error message if bot doesn't have correct rights on server, and give info to admin on what rights
 to set
-* Under some circumstances regarding unsign of a raid group it seems that there is an exception that ends up in the logs like this:
-2017-10-12 22:41:15.237  WARN 6116 --- [inWS-ReadThread] p.d.r.s.EmoticonSignUpMessageListener    : We have a situation where user or exception message is null! Event: net.dv8tion.jda.core.events.message.guild.react.GuildMessageReactionRemoveEvent@3d36a3c1
-- doesn't seem to break anything but needs checking.
 
 Fix, misc:
 * Regexp to remove all duplicate or more spaces in between arguments
@@ -34,29 +38,35 @@ Fix, misc:
 
 Do, features:
 
-* Complete English locale handling and do a English language deploy of the bot
+* -1 syntax to remove signups from a raid
+* Can we listen for +(number) (time) (gym) and fix possible user weirdness like forgetting 
+time (equalling no time to "now", if raid is active) to signup using that?
+* Snooze button for raid group
+* !raid change remove-group (gym) so admins can clean up user mess when for example setting
+wrong time
+* Gymhuntr integration via GymhuntrMessageListener (isBot())
+* Emote to mark group as having finished (removes all signups) - only group creator?
+* Config for permission setting of various groups of commands:
+    * Raid functions like create, list can be set to be admin only
+    * Raid group creation can be set to admin only
+* Config for time of automatic message deletion
+    * Number of seconds, or -1 = never delete
+* Config for turning on and off some feature groups (map, info, raid)
 * Enable bot owner to trigger import of a regional dataset "on the fly" and save gym region data in database 
 (needs non-free Heroku version)
 * !raid me - Answer in PM with my current signups over all raids in the region and my current trackings 
 * Admin commands where bot owner can purge configuration, get statistics, help a user (send man help via DM?)
 * !raid install needs to be "protected" so admins can only affect the configuration of their own server
 (this may mean the install command has to be run in the context of a server chat so we can fetch server name)
-* "What's new"-command so people can see what new features.
 * Timezone handling via config, used in all commands related to time
 * Credit Iconninja for icons
 * Check permissions during config - need to have MANAGE_MESSAGE and access to send messages, among other things
-* Enable channel admins to choose their default locale 
-(and that the system doesn't have a default locale even for exceptions etc - also remove use of !raid help if possible)
 * Embeddedlänkar vid sökning som möjliggör att köra kommandot igen för bara det resultatet via klick
 
 Maybe, features:
 
-* Nytt förslag; ifall man skriver "!raid info --dm" så ska infon skickas i PM istället för att visas i kanalen
-* Se om det är möjligt att automatiskt adda raider inom ett område man satt upp från gymhuntr.com (deras bot)
 * Config should have a note if a server is TEST or PROD and a env property which type of server,
 so we can't get test config on a prod server running by mistake
 * Add counters/counter moves to all pokemon, based on "good dps pokemons" for each type?
-* Make locale configurable both on server level, but also for each user to be able to choose locale
-* Persistent tracking (needs non-free Heroku version)
 * Checking error codes?
 ...

@@ -7,6 +7,7 @@ import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.junit4.SpringRunner;
+import org.springframework.transaction.annotation.Transactional;
 import pokeraidbot.TestServerMain;
 import pokeraidbot.Utils;
 import pokeraidbot.domain.config.ClockService;
@@ -14,7 +15,7 @@ import pokeraidbot.domain.config.LocaleService;
 import pokeraidbot.domain.gym.Gym;
 import pokeraidbot.domain.gym.GymRepository;
 import pokeraidbot.domain.pokemon.PokemonRepository;
-import pokeraidbot.infrastructure.jpa.config.ConfigRepository;
+import pokeraidbot.infrastructure.jpa.config.ServerConfigRepository;
 import pokeraidbot.infrastructure.jpa.raid.RaidEntityRepository;
 
 import java.time.LocalDateTime;
@@ -30,6 +31,7 @@ import static org.mockito.Mockito.when;
 
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = {TestServerMain.class})
+@Transactional
 public class RaidRepositoryTest {
     private static final String uppsalaRegion = "uppsala";
     @Autowired
@@ -43,14 +45,14 @@ public class RaidRepositoryTest {
     @Autowired
     LocaleService localeService;
     @Autowired
-    ConfigRepository configRepository;
+    ServerConfigRepository serverConfigRepository;
     @Autowired
     RaidEntityRepository raidEntityRepository;
 
     @Before
     public void setUp() throws Exception {
         Utils.setClockService(clockService);
-        gymRepository = TestServerMain.getGymRepositoryForConfig(localeService, configRepository);
+        gymRepository = TestServerMain.getGymRepositoryForConfig(localeService, serverConfigRepository);
         pokemonRepository = new PokemonRepository("/mons.json", localeService);
         raidEntityRepository.deleteAllInBatch();
     }
@@ -62,7 +64,7 @@ public class RaidRepositoryTest {
         final LocalTime nowTime = now.toLocalTime();
         LocalDateTime endOfRaid = now.plusMinutes(45);
         final Gym gym = gymRepository.findByName("Blenda", uppsalaRegion);
-        Raid enteiRaid = new Raid(pokemonRepository.getByName("Entei"), endOfRaid, gym, new LocaleService(), uppsalaRegion);
+        Raid enteiRaid = new Raid(pokemonRepository.search("Entei", null), endOfRaid, gym, localeService, uppsalaRegion);
         String raidCreatorName = "testUser1";
         try {
             repo.newRaid(raidCreatorName, enteiRaid);
@@ -70,20 +72,20 @@ public class RaidRepositoryTest {
             System.err.println(e.getMessage());
             fail("Could not save raid: " + e.getMessage());
         }
-        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion);
+        User user = mock(User.class);
+        String userName = "testUser2";
+        when(user.getName()).thenReturn(userName);
+        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion, user);
         enteiRaid.setId(raid.getId()); // Set to same id for equals comparison
         enteiRaid.setCreator(raid.getCreator()); // Set creator to same for equals comparison
         assertThat(raid, is(enteiRaid));
-        String userName = "testUser2";
-        User user = mock(User.class);
-        when(user.getName()).thenReturn(userName);
         int howManyPeople = 3;
         LocalTime arrivalTime = nowTime.plusMinutes(30);
         raid.signUp(user, howManyPeople, arrivalTime, repo);
         assertThat(raid.getSignUps().size(), is(1));
         assertThat(raid.getNumberOfPeopleSignedUp(), is(howManyPeople));
 
-        final Raid raidFromDb = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion);
+        final Raid raidFromDb = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion, user);
         assertThat(raidFromDb, is(raid));
         assertThat(raidFromDb.getSignUps().size(), is(1));
     }
@@ -95,7 +97,7 @@ public class RaidRepositoryTest {
         final LocalTime nowTime = now.toLocalTime();
         LocalDateTime endOfRaid = now.plusMinutes(45);
         final Gym gym = gymRepository.findByName("Blenda", uppsalaRegion);
-        Raid enteiRaid = new Raid(pokemonRepository.getByName("Entei"), endOfRaid, gym, new LocaleService(), uppsalaRegion);
+        Raid enteiRaid = new Raid(pokemonRepository.search("Entei", null), endOfRaid, gym, localeService, uppsalaRegion);
         String raidCreatorName = "testUser1";
         try {
             repo.newRaid(raidCreatorName, enteiRaid);
@@ -103,8 +105,11 @@ public class RaidRepositoryTest {
             System.err.println(e.getMessage());
             fail("Could not save raid: " + e.getMessage());
         }
-        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion);
-        Raid changedRaid = repo.changePokemon(raid, pokemonRepository.getByName("Mewtwo"));
+        User user = mock(User.class);
+        when(user.getName()).thenReturn(raidCreatorName);
+
+        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion, user);
+        Raid changedRaid = repo.changePokemon(raid, pokemonRepository.search("Mewtwo", user));
         assertThat(raid.getEndOfRaid(), is(changedRaid.getEndOfRaid()));
         assertThat(raid.getGym(), is(changedRaid.getGym()));
         assertThat(raid.getSignUps(), is(changedRaid.getSignUps()));
@@ -120,7 +125,7 @@ public class RaidRepositoryTest {
         final LocalTime nowTime = now.toLocalTime();
         LocalDateTime endOfRaid = now.plusMinutes(45);
         final Gym gym = gymRepository.findByName("Blenda", uppsalaRegion);
-        Raid enteiRaid = new Raid(pokemonRepository.getByName("Entei"), endOfRaid, gym, new LocaleService(), uppsalaRegion);
+        Raid enteiRaid = new Raid(pokemonRepository.search("Entei", null), endOfRaid, gym, localeService, uppsalaRegion);
         String raidCreatorName = "testUser1";
         try {
             repo.newRaid(raidCreatorName, enteiRaid);
@@ -128,7 +133,10 @@ public class RaidRepositoryTest {
             System.err.println(e.getMessage());
             fail("Could not save raid: " + e.getMessage());
         }
-        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion);
+        User user = mock(User.class);
+        when(user.getName()).thenReturn(raidCreatorName);
+
+        Raid raid = repo.getActiveRaidOrFallbackToExRaid(gym, uppsalaRegion, user);
         Raid changedRaid = repo.changeEndOfRaid(raid, endOfRaid.plusMinutes(5));
         assertThat(raid.getEndOfRaid(), not(changedRaid.getEndOfRaid()));
         assertThat(changedRaid.getEndOfRaid(), is(raid.getEndOfRaid().plusMinutes(5)));

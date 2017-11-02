@@ -9,8 +9,11 @@ import javax.persistence.Id;
 import java.util.Locale;
 import java.util.UUID;
 
+/**
+ * Server configuration entity
+ */
 @Entity
-
+//@Table(indexes = @Index(columnList = "default,server,region"), name="config")
 public class Config {
     @Id
     @Column(nullable = false, unique = true)
@@ -27,9 +30,11 @@ public class Config {
     private Boolean giveHelp = false;
     @Column
     private Boolean pinGroups = true;
+    @Column
+    private String overviewMessageId;
 
-    public Config() {
-        id = UUID.randomUUID().toString();
+    // For JPA
+    protected Config() {
     }
 
     public Config(String region, Boolean replyInDmWhenPossible, Locale locale, String server) {
@@ -91,7 +96,11 @@ public class Config {
     }
 
     public Locale getLocale() {
-        return new Locale(locale);
+        if (locale != null) {
+            return new Locale(locale);
+        } else {
+            return LocaleService.DEFAULT;
+        }
     }
 
     public void setLocale(Locale locale) {
@@ -101,6 +110,14 @@ public class Config {
 
     public String getId() {
         return id;
+    }
+
+    public void setOverviewMessageId(String overviewMessageId) {
+        this.overviewMessageId = overviewMessageId;
+    }
+
+    public String getOverviewMessageId() {
+        return overviewMessageId;
     }
 
     @Override
@@ -117,7 +134,8 @@ public class Config {
             return false;
         if (locale != null ? !locale.equals(config.locale) : config.locale != null) return false;
         if (giveHelp != null ? !giveHelp.equals(config.giveHelp) : config.giveHelp != null) return false;
-        return pinGroups != null ? pinGroups.equals(config.pinGroups) : config.pinGroups == null;
+        if (pinGroups != null ? !pinGroups.equals(config.pinGroups) : config.pinGroups != null) return false;
+        return overviewMessageId != null ? overviewMessageId.equals(config.overviewMessageId) : config.overviewMessageId == null;
     }
 
     @Override
@@ -129,17 +147,19 @@ public class Config {
         result = 31 * result + (locale != null ? locale.hashCode() : 0);
         result = 31 * result + (giveHelp != null ? giveHelp.hashCode() : 0);
         result = 31 * result + (pinGroups != null ? pinGroups.hashCode() : 0);
+        result = 31 * result + (overviewMessageId != null ? overviewMessageId.hashCode() : 0);
         return result;
     }
 
     @Override
     public String toString() {
         return "Config{" +
-                "region='" + region + '\'' +
+                "server='" + server + '\'' +
+                ", region='" + region + '\'' +
                 ", replyInDmWhenPossible=" + replyInDmWhenPossible +
                 ", locale='" + locale + '\'' +
-                ", giveHelp=" + (giveHelp == null ? String.valueOf(false) : giveHelp) +
-                ", pinGroups=" + (pinGroups == null ? String.valueOf(true) : pinGroups) +
+                ", giveHelp=" + giveHelp +
+                ", pinGroups=" + pinGroups +
                 '}';
     }
 }
